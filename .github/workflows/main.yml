@@ -86,14 +86,16 @@ jobs:
           $DohUrl = "https://my.ublockdns.com/i3a1hosu"
           try {
               $DnsIp = [System.Net.Dns]::GetHostAddresses($DnsHost)[0].IPAddressToString
-              $NetAdapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.Virtual -eq $false } | Select-Object -First 1
+              
+              $MainRoute = Get-NetRoute -DestinationPrefix "0.0.0.0/0" | Sort-Object RouteMetric | Select-Object -First 1
+              $InterfaceIndex = $MainRoute.InterfaceIndex
               
               Add-DnsClientDohServerAddress -ServerAddress $DnsIp -DohTemplate $DohUrl -AllowFallbackToUdp $false -ErrorAction SilentlyContinue
-              Set-DnsClientServerAddress -InterfaceIndex $NetAdapter.ifIndex -ServerAddresses $DnsIp
+              Set-DnsClientServerAddress -InterfaceIndex $InterfaceIndex -ServerAddresses $DnsIp
               
-              Write-Host "DNS successfully changed and encrypted to DoH: $DohUrl ($DnsIp)"
+              Write-Host "DNS successfully changed and encrypted to DoH: $DohUrl ($DnsIp) on Interface: $InterfaceIndex"
           } catch {
-              Write-Error "Failed to set encrypted DNS."
+              Write-Error "Failed to set encrypted DNS. Error details: $_"
           }
       
       - name: Verify RDP Accessibility
