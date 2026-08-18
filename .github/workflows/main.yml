@@ -9,22 +9,6 @@ jobs:
     timeout-minutes: 3600
 
     steps:
-      - name: Configure Encrypted DNS
-        run: |
-          $DnsHost = "my.ublockdns.com"
-          $DohUrl = "https://my.ublockdns.com/i3a1hosu"
-          try {
-              $DnsIp = [System.Net.Dns]::GetHostAddresses($DnsHost)[0].IPAddressToString
-              $NetAdapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.Virtual -eq $false } | Select-Object -First 1
-              
-              Add-DnsClientDohServerAddress -ServerAddress $DnsIp -DohTemplate $DohUrl -AllowFallbackToUdp $false -ErrorAction SilentlyContinue
-              Set-DnsClientServerAddress -InterfaceIndex $NetAdapter.ifIndex -ServerAddresses $DnsIp
-              
-              Write-Host "DNS successfully changed and encrypted to DoH: $DohUrl ($DnsIp)"
-          } catch {
-              Write-Error "Failed to set encrypted DNS."
-          }
-
       - name: Configure Core RDP Settings
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' `
@@ -95,6 +79,22 @@ jobs:
               exit 1
           }
           echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
+
+      - name: Configure Encrypted DNS
+        run: |
+          $DnsHost = "my.ublockdns.com"
+          $DohUrl = "https://my.ublockdns.com/i3a1hosu"
+          try {
+              $DnsIp = [System.Net.Dns]::GetHostAddresses($DnsHost)[0].IPAddressToString
+              $NetAdapter = Get-NetAdapter | Where-Object { $_.Status -eq "Up" -and $_.Virtual -eq $false } | Select-Object -First 1
+              
+              Add-DnsClientDohServerAddress -ServerAddress $DnsIp -DohTemplate $DohUrl -AllowFallbackToUdp $false -ErrorAction SilentlyContinue
+              Set-DnsClientServerAddress -InterfaceIndex $NetAdapter.ifIndex -ServerAddresses $DnsIp
+              
+              Write-Host "DNS successfully changed and encrypted to DoH: $DohUrl ($DnsIp)"
+          } catch {
+              Write-Error "Failed to set encrypted DNS."
+          }
       
       - name: Verify RDP Accessibility
         run: |
