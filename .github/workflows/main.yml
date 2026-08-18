@@ -90,10 +90,12 @@ jobs:
               $MainRoute = Get-NetRoute -DestinationPrefix "0.0.0.0/0" | Sort-Object RouteMetric | Select-Object -First 1
               $InterfaceIndex = $MainRoute.InterfaceIndex
               
-              Add-DnsClientDohServerAddress -ServerAddress $DnsIp -DohTemplate $DohUrl -AllowFallbackToUdp $false -ErrorAction SilentlyContinue
+              Add-DnsClientDohServerAddress -ServerAddress $DnsIp -DohTemplate $DohUrl -AllowFallbackToUdp $false -AutoUpgrade $true -ErrorAction SilentlyContinue
               Set-DnsClientServerAddress -InterfaceIndex $InterfaceIndex -ServerAddresses $DnsIp
               
-              Write-Host "DNS successfully changed and encrypted to DoH: $DohUrl ($DnsIp) on Interface: $InterfaceIndex"
+              Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\Dnscache\Parameters" -Name "EnableAutoDoh" -Value 2 -Force -ErrorAction SilentlyContinue
+              
+              Write-Host "DNS successfully changed and strictly enforced to DoH: $DohUrl ($DnsIp) on Interface: $InterfaceIndex"
           } catch {
               Write-Error "Failed to set encrypted DNS. Error details: $_"
           }
